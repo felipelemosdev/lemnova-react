@@ -25,7 +25,8 @@ import { useApp } from "../context/AppContext.jsx";
 import {
     calculateContractIndicators,
     getSortedEvents,
-    splitTasksByDueDate
+    splitTasksByDueDate,
+    PROCESS_STAGES
 } from "../services/domain.js";
 import { formatDate, todayISO } from "../services/utils.js";
 
@@ -41,6 +42,13 @@ export default function Dashboard() {
     const upcomingEvents = getSortedEvents(events).filter((eventItem) => eventItem.date >= today).slice(0, 8);
 
     const contractIndicators = calculateContractIndicators(installments, clients);
+
+    // Agrupa clientes por etapa do processo, na ordem do fluxo — só mostra etapas com
+    // pelo menos 1 cliente, pra não poluir o painel com uma lista de 15 linhas vazias.
+    const stageCounts = PROCESS_STAGES.map((stage) => ({
+        stage,
+        count: clients.filter((client) => (client.processStage || PROCESS_STAGES[0]) === stage).length
+    })).filter((entry) => entry.count > 0);
 
     return (
         <section id="dashboardSection" className="content-section active-section">
@@ -182,6 +190,33 @@ export default function Dashboard() {
 
                     <div id="dashRecentActivity" className="compact-list">
                         <p className="empty-state">Nenhuma movimentação recente.</p>
+                    </div>
+                </section>
+
+                {/* Fluxo do processo — quantos clientes estão em cada etapa */}
+                <section className="workspace-panel">
+                    <div className="section-heading">
+                        <div>
+                            <p className="eyebrow">Clientes</p>
+                            <h3>Fluxo do processo</h3>
+                        </div>
+
+                        <Link className="btn btn-primary" to="/clientes">
+                            Ver clientes
+                        </Link>
+                    </div>
+
+                    <div className="compact-list">
+                        {stageCounts.length === 0 ? (
+                            <p className="empty-state">Nenhum cliente cadastrado.</p>
+                        ) : (
+                            stageCounts.map(({ stage, count }) => (
+                                <div className="compact-item" key={stage}>
+                                    <span>{stage}</span>
+                                    <strong>{count}</strong>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </section>
             </div>

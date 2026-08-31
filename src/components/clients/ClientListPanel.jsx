@@ -4,7 +4,7 @@
 // createClientListActions(), createClientAvatar() de js/clients.js.
 
 import { useState, Fragment } from "react";
-import { sortClients } from "../../services/domain.js";
+import { sortClients, PROCESS_STAGES } from "../../services/domain.js";
 import { getInitials, formatCpf } from "../../services/utils.js";
 import ClientExpandedDetails from "./ClientExpandedDetails.jsx";
 
@@ -26,6 +26,7 @@ export default function ClientListPanel({ clients, documents, onEdit, onDelete, 
     const [viewMode, setViewMode] = useState("cards");
     const [search, setSearch] = useState("");
     const [benefitFilter, setBenefitFilter] = useState("");
+    const [stageFilter, setStageFilter] = useState("");
     const [sortOrder, setSortOrder] = useState("name-asc");
     const [openClientId, setOpenClientId] = useState(null);
 
@@ -33,6 +34,9 @@ export default function ClientListPanel({ clients, documents, onEdit, onDelete, 
     const filteredClients = sortClients(
         clients.filter((client) => {
             if (benefitFilter && client.benefit !== benefitFilter) {
+                return false;
+            }
+            if (stageFilter && (client.processStage || PROCESS_STAGES[0]) !== stageFilter) {
                 return false;
             }
             const content = `${client.name} ${client.document} ${client.phone} ${client.benefit || ""}`.toLowerCase();
@@ -90,6 +94,16 @@ export default function ClientListPanel({ clients, documents, onEdit, onDelete, 
                         <option value="">Todos os tipos</option>
                         {BENEFIT_FILTER_OPTIONS.map((option) => (
                             <option key={option} value={option}>{option}</option>
+                        ))}
+                    </select>
+                </label>
+
+                <label className="field list-controls-sort">
+                    <span>Filtrar por etapa do processo</span>
+                    <select id="clientStageFilter" value={stageFilter} onChange={(e) => setStageFilter(e.target.value)}>
+                        <option value="">Todas as etapas</option>
+                        {PROCESS_STAGES.map((stage) => (
+                            <option key={stage} value={stage}>{stage}</option>
                         ))}
                     </select>
                 </label>
@@ -154,6 +168,7 @@ function ClientCard({ client, documents, isOpen, onToggle, onEdit, onDelete, onP
                 <div className="client-profile-title">
                     <strong>{client.name}</strong>
                     <span>CPF {formatCpf(client.document)} · {client.status || "Sem status"}</span>
+                    <span className="task-pill medium">{client.processStage || PROCESS_STAGES[0]}</span>
                 </div>
                 <div className="table-actions" onClick={(e) => e.stopPropagation()}>
                     <button className="action-button" type="button" onClick={onToggle}>{isOpen ? "Fechar" : "Abrir"}</button>

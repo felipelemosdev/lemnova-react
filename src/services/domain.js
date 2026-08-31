@@ -259,6 +259,50 @@ export function splitTasksByDueDate(tasks) {
     };
 }
 
+// ---- Fluxo do processo (Cadastro → ... → Finalizado) -------------------------
+//
+// Migrado do documento "Atualização do Fluxo de Cliente e Contrato — Lemnova".
+// Etapa do processo é INDEPENDENTE de `client.status` (situação geral do cadastro) e de
+// `client.administrativeStatus` (resultado do benefício) — nunca misturar os três. Cada
+// mudança de etapa deve ser registrada em `stageHistoryApi` (services/api.js), nunca só
+// sobrescrita no cliente.
+
+export const PROCESS_STAGES = [
+    "Cadastro",
+    "Documentação pendente",
+    "Documentação completa",
+    "Protocolo realizado",
+    "Aguardando avaliação social",
+    "Avaliação social realizada",
+    "Aguardando perícia médica",
+    "Perícia médica realizada",
+    "Aguardando resultado",
+    "Deferido",
+    "Cobrança administrativa",
+    "Indeferido",
+    "Em cálculo de RPV",
+    "Cobrança RPV",
+    "Finalizado"
+];
+
+export const DEFAULT_PROCESS_STAGE = PROCESS_STAGES[0];
+
+export function getProcessStageIndex(stage) {
+    const index = PROCESS_STAGES.indexOf(stage);
+    return index === -1 ? 0 : index;
+}
+
+// A partir de "Aguardando resultado" o fluxo se bifurca (Deferido x Indeferido), então
+// não existe um "próximo" único — quem decide pra qual lado ir é a tela (resultado do
+// benefício), não esse helper.
+export const STAGE_BRANCH_POINT = "Aguardando resultado";
+
+export function getNextLinearStage(stage) {
+    const index = getProcessStageIndex(stage);
+    if (PROCESS_STAGES[index] === STAGE_BRANCH_POINT) return null;
+    return PROCESS_STAGES[index + 1] || null;
+}
+
 // ---- Clientes -----------------------------------------------------------------
 
 // Mesmas 5 opções de ordenação/filtro de js/clients.js (usadas no cadastro de

@@ -17,7 +17,16 @@ export const STORAGE_KEYS = {
     clientDocuments: "juresone.clientDocuments",
     clientAttachments: "juresone.clientAttachments",
     contractPdfTemplates: "juresone.contractPdfTemplates",
-    initialized: "juresone.initialized"
+    initialized: "juresone.initialized",
+    // Histórico de mudanças de etapa do processo (fluxo Cadastro → ... → Finalizado).
+    // Um object store próprio (não misturado em `clients`) porque é um log que só cresce
+    // — cada mudança de etapa vira um registro novo, o cadastro do cliente nunca guarda
+    // "etapas anteriores" dentro dele.
+    stageHistory: "juresone.stageHistory",
+    // Configurações gerais do sistema (hoje só o salário mínimo vigente, usado como
+    // referência nos cálculos manuais de honorários/RPV). Fica no meta store, igual
+    // sessão — é um valor único, não uma coleção.
+    settings: "juresone.settings"
 };
 
 // versão 2: adiciona as object stores do módulo de Kits Jurídicos (kits, modelos de
@@ -28,12 +37,15 @@ export const STORAGE_KEYS = {
 // daquele tipo.
 // versão 4: adiciona a store de parcelas de contrato (installments), usada pelo módulo de
 // Contratos para controlar vencimentos gerados automaticamente quando um cliente é
-// ativado. O bloco "upgradeneeded" cria apenas as stores que ainda não existirem, então
+// ativado.
+// versão 5: adiciona a store de histórico de etapas do processo (stageHistory), usada
+// pelo fluxo Cadastro → Documentação → Protocolo → Avaliação Social → Perícia Médica →
+// Resultado. O bloco "upgradeneeded" cria apenas as stores que ainda não existirem, então
 // bancos já abertos em versões anteriores são atualizados automaticamente sem perda de
 // dados.
 const DATABASE_CONFIG = {
     name: "juresone.database",
-    version: 4,
+    version: 5,
     stores: {
         [STORAGE_KEYS.clients]: "clients",
         [STORAGE_KEYS.documents]: "documents",
@@ -46,6 +58,7 @@ const DATABASE_CONFIG = {
         [STORAGE_KEYS.clientDocuments]: "clientDocuments",
         [STORAGE_KEYS.clientAttachments]: "clientAttachments",
         [STORAGE_KEYS.contractPdfTemplates]: "contractPdfTemplates",
+        [STORAGE_KEYS.stageHistory]: "stageHistory",
     },
     metaStore: "meta",
     legacyMigratedKey: "legacyMigrated"
@@ -281,7 +294,8 @@ function deleteDatabaseMeta(key) {
 function getDatabaseMetaKey(key) {
     const metaKeys = {
         [STORAGE_KEYS.session]: "session",
-        [STORAGE_KEYS.initialized]: "initialized"
+        [STORAGE_KEYS.initialized]: "initialized",
+        [STORAGE_KEYS.settings]: "settings"
     };
 
     return metaKeys[key] || "";

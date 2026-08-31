@@ -10,9 +10,22 @@ import { todayISO } from "../../services/utils.js";
 
 const EVENT_TYPES = ["Avaliação social", "Perícia médica", "Perícia judicial", "Reunião", "Agendamento", "Outros"];
 const ALERT_OPTIONS = ["No horário", "1 dia antes", "3 dias antes", "7 dias antes"];
+// Status específico de avaliação social / perícia médica, além do "concluído" (done) que
+// os outros tipos de evento já usam — pedido explícito do fluxo do processo (2.1/2.2).
+const EXAM_STATUS_OPTIONS = ["Agendada", "Realizada", "Cancelada", "Reagendada"];
+const EXAM_TYPES = ["Avaliação social", "Perícia médica"];
 
 function emptyForm() {
-    return { type: EVENT_TYPES[0], date: todayISO(), time: "09:00", clientId: "", alert: "No horário", notes: "" };
+    return {
+        type: EVENT_TYPES[0],
+        date: todayISO(),
+        time: "09:00",
+        location: "",
+        examStatus: EXAM_STATUS_OPTIONS[0],
+        clientId: "",
+        alert: "No horário",
+        notes: ""
+    };
 }
 
 export default function EventFormModal({ editingEvent, onClose }) {
@@ -31,10 +44,15 @@ export default function EventFormModal({ editingEvent, onClose }) {
     async function handleSubmit(event) {
         event.preventDefault();
 
+        const isExam = EXAM_TYPES.includes(form.type);
         const payload = {
             type: form.type,
             date: form.date,
             time: form.time,
+            location: form.location.trim(),
+            // examStatus só faz sentido pra Avaliação social/Perícia médica; outros tipos
+            // continuam usando só o "done" (concluído) que já existia.
+            examStatus: isExam ? form.examStatus : "",
             clientId: form.clientId,
             alert: form.alert,
             notes: form.notes.trim()
@@ -93,6 +111,34 @@ export default function EventFormModal({ editingEvent, onClose }) {
                         </select>
                     </label>
 
+                    {EXAM_TYPES.includes(form.type) ? (
+                        <>
+                            <label className="field">
+                                <span>Local</span>
+                                <input
+                                    id="eventLocation"
+                                    type="text"
+                                    placeholder="Ex: Agência do INSS - Centro"
+                                    value={form.location}
+                                    onChange={(e) => updateField("location", e.target.value)}
+                                />
+                            </label>
+
+                            <label className="field">
+                                <span>Status</span>
+                                <select
+                                    id="eventExamStatus"
+                                    value={form.examStatus}
+                                    onChange={(e) => updateField("examStatus", e.target.value)}
+                                >
+                                    {EXAM_STATUS_OPTIONS.map((option) => (
+                                        <option key={option} value={option}>{option}</option>
+                                    ))}
+                                </select>
+                            </label>
+                        </>
+                    ) : null}
+
                     <label className="field">
                         <span>Alerta</span>
                         <select id="eventAlert" required value={form.alert} onChange={(e) => updateField("alert", e.target.value)}>
@@ -135,6 +181,8 @@ function eventToForm(eventItem) {
         type: eventItem.type || "Avaliação social",
         date: eventItem.date || todayISO(),
         time: eventItem.time || "09:00",
+        location: eventItem.location || "",
+        examStatus: eventItem.examStatus || EXAM_STATUS_OPTIONS[0],
         clientId: eventItem.clientId || "",
         alert: eventItem.alert || "No horário",
         notes: eventItem.notes || ""

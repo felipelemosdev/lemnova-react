@@ -12,6 +12,7 @@ import { useState } from "react";
 import { useApp } from "../context/AppContext.jsx";
 import ClientForm from "../components/clients/ClientForm.jsx";
 import ClientListPanel from "../components/clients/ClientListPanel.jsx";
+import ProcessStageTracker from "../components/clients/ProcessStageTracker.jsx";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
 import DocumentPreviewModal from "../components/DocumentPreviewModal.jsx";
 import { formatFileSize, getDocumentLabel } from "../services/utils.js";
@@ -19,29 +20,35 @@ import { formatFileSize, getDocumentLabel } from "../services/utils.js";
 export default function Clientes() {
     const { clients, documents, findClient, deleteClient } = useApp();
     const [mode, setMode] = useState("register");
-    const [editingClient, setEditingClient] = useState(null);
+    const [editingClientId, setEditingClientId] = useState(null);
     const [pendingDelete, setPendingDelete] = useState(null);
     const [preview, setPreview] = useState(null);
 
+    // Deriva sempre da lista atual do contexto (em vez de guardar uma cópia do cliente em
+    // state) — assim, depois de changeStage() no ProcessStageTracker (que dá refresh()),
+    // o tracker e o formulário recebem a etapa/campos atualizados sem precisar sincronizar
+    // manualmente duas fontes de verdade.
+    const editingClient = editingClientId ? clients.find((client) => client.id === editingClientId) || null : null;
+
     function startEdit(client) {
-        setEditingClient(client);
+        setEditingClientId(client.id);
         setMode("register");
     }
 
     function startCreate() {
-        setEditingClient(null);
+        setEditingClientId(null);
         setMode("register");
     }
 
     function handleSaved() {
-        setEditingClient(null);
+        setEditingClientId(null);
         setMode("list");
     }
 
     async function confirmDelete() {
         await deleteClient(pendingDelete.id);
-        if (editingClient?.id === pendingDelete.id) {
-            setEditingClient(null);
+        if (editingClientId === pendingDelete.id) {
+            setEditingClientId(null);
         }
         setPendingDelete(null);
     }
@@ -100,12 +107,16 @@ export default function Clientes() {
                     </button>
                 </div>
 
+                {mode === "register" && editingClient ? (
+                    <ProcessStageTracker client={editingClient} />
+                ) : null}
+
                 {mode === "register" ? (
                     <ClientForm
                         key={editingClient?.id ?? "new"}
                         editingClient={editingClient}
                         onCancelEdit={() => {
-                            setEditingClient(null);
+                            setEditingClientId(null);
                         }}
                         onSaved={handleSaved}
                     />
