@@ -1,0 +1,317 @@
+// js/utils.js
+// Funções utilitárias puras (sem dependência de appState, elements ou storage),
+// usadas por vários módulos: formatação, validação de CPF/CEP, ids, arquivos, HTML escaping etc.
+
+// Lista única de tipos de contrato usada em todo o sistema (cadastro de cliente, filtro
+// de busca, financeiro e módulo de contratos). Mantida em um só lugar para que os ids
+// batam entre client.contractType, financeEntry.contractType e CONTRACT_TEMPLATES.
+export const CONTRACT_TYPES = [
+    { id: "aposentadoria", label: "Aposentadoria" },
+    { id: "auxilio_doenca", label: "Auxílio Doença" },
+    { id: "auxilio_acidente", label: "Auxílio Acidente" },
+    { id: "doenca_ocupacional", label: "Doença Ocupacional" },
+    { id: "pensao_morte", label: "Pensão por Morte" },
+    { id: "trabalhista", label: "Trabalhista" },
+    { id: "maternidade", label: "Maternidade" },
+    { id: "majoracao", label: "Majoração" },
+    { id: "loas_idoso", label: "LOAS Idoso" },
+    { id: "loas_deficiente", label: "LOAS Deficiente" },
+    { id: "consumidor", label: "Consumidor" }
+];
+
+
+export function getContractTypeLabel(contractTypeId) {
+    const found = CONTRACT_TYPES.find((item) => item.id === contractTypeId);
+    return found ? found.label : "";
+}
+
+
+// ============================================================================
+// Listas do módulo Financeiro (baseadas no modelo "Gestão Financeira -
+// Escritório Previdenciário"): formas de pagamento, categorias de entrada
+// (recebimentos) e de saída (despesas), e situações possíveis de cada uma.
+// Usadas pelo formulário de lançamento em finance.js e pelas abas de Contas
+// a Receber / Contas a Pagar / Fluxo de Caixa.
+// ============================================================================
+
+export const PAYMENT_METHODS = [
+    "PIX", "TED", "DOC", "Dinheiro", "Cartão", "Boleto", "Cheque", "Outros"
+];
+
+// "Tipo de Recebimento" da planilha, usado como Categoria quando o lançamento é uma Entrada.
+export const FINANCE_INCOME_CATEGORIES = [
+    "Honorários iniciais", "Entrada", "Parcela", "Êxito", "Sucumbência", "Outros"
+];
+
+// "Categoria" da aba Despesas + CategoriaDespesa da aba Listas, usada quando o lançamento é uma Saída.
+export const FINANCE_EXPENSE_CATEGORIES = [
+    "Aluguel", "Internet", "Água", "Energia", "Telefone", "Custas judiciais/processuais",
+    "Honorários terceiros", "Contabilidade", "Impostos", "Marketing", "Softwares", "Cursos",
+    "Viagens", "Alimentação", "Material de escritório", "Equipamentos", "Correios",
+    "Cartório", "Combustível", "Outros"
+];
+
+export const FINANCE_INCOME_STATUSES = ["Pendente", "Recebido", "Cancelado"];
+export const FINANCE_EXPENSE_STATUSES = ["Pendente", "Pago", "Cancelado"];
+
+export function getFinanceCategoryOptions(type) {
+    return type === "Saída" ? FINANCE_EXPENSE_CATEGORIES : FINANCE_INCOME_CATEGORIES;
+}
+
+export function getFinanceStatusOptions(type) {
+    return type === "Saída" ? FINANCE_EXPENSE_STATUSES : FINANCE_INCOME_STATUSES;
+}
+
+
+export function onlyDigits(value) {
+    return String(value || "").replace(/\D/g, "");
+}
+
+
+export function formatCpf(value) {
+    const digits = onlyDigits(value).slice(0, 11);
+    return digits
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+}
+
+
+export function isValidCpf(value) {
+    const cpf = onlyDigits(value);
+
+    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) {
+        return false;
+    }
+
+    const calculateDigit = (base) => {
+        let sum = 0;
+        for (let index = 0; index < base.length; index += 1) {
+            sum += Number(base[index]) * (base.length + 1 - index);
+        }
+
+        const remainder = (sum * 10) % 11;
+        return remainder === 10 ? 0 : remainder;
+    };
+
+    const firstDigit = calculateDigit(cpf.slice(0, 9));
+    const secondDigit = calculateDigit(cpf.slice(0, 10));
+
+    return firstDigit === Number(cpf[9]) && secondDigit === Number(cpf[10]);
+}
+
+
+export function formatCep(value) {
+    const digits = onlyDigits(value).slice(0, 8);
+    return digits.replace(/(\d{5})(\d{1,3})$/, "$1-$2");
+}
+
+
+export function formatAddress(address = {}) {
+    const streetLine = [address.street, address.number].filter(Boolean).join(", ");
+    const cityLine = [address.district, address.city, address.state].filter(Boolean).join(" - ");
+    return [streetLine, cityLine].filter(Boolean).join(" | ") || "Endereço não informado";
+}
+
+
+export function getInitials(name) {
+    return String(name || "Cliente")
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part.charAt(0).toUpperCase())
+        .join("");
+}
+
+
+export function createId() {
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+
+export function todayISO() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+
+// Soma N meses a uma data ISO (YYYY-MM-DD) preservando o dia sempre que possível
+// (cai para o último dia do mês de destino quando o dia de origem não existir nele,
+// ex.: 31/01 + 1 mês -> 28/02 ou 29/02). Usado para gerar os vencimentos mensais
+// das parcelas de contrato.
+export function addMonthsISO(dateISO, months) {
+    const [year, month, day] = dateISO.split("-").map(Number);
+    const targetMonthIndex = month - 1 + months;
+    const targetDate = new Date(Date.UTC(year, targetMonthIndex, 1));
+    const daysInTargetMonth = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth() + 1, 0)).getUTCDate();
+    targetDate.setUTCDate(Math.min(day, daysInTargetMonth));
+    return targetDate.toISOString().slice(0, 10);
+}
+
+
+// Diferença em dias corridos entre duas datas ISO (a - b).
+export function diffDaysISO(dateISOa, dateISOb) {
+    const a = new Date(`${dateISOa}T00:00:00Z`);
+    const b = new Date(`${dateISOb}T00:00:00Z`);
+    return Math.round((a - b) / 86400000);
+}
+
+
+export function formatCurrency(value) {
+    return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+    }).format(value || 0);
+}
+
+
+export function formatDate(value) {
+    if (!value) {
+        return "-";
+    }
+
+    return new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "UTC"
+    }).format(new Date(`${value}T00:00:00Z`));
+}
+
+
+export function formatFileSize(bytes) {
+    if (!bytes) {
+        return "0 KB";
+    }
+
+    const kilobytes = bytes / 1024;
+    if (kilobytes < 1024) {
+        return `${kilobytes.toFixed(1)} KB`;
+    }
+
+    return `${(kilobytes / 1024).toFixed(1)} MB`;
+}
+
+
+export function getDocumentLabel(fileType) {
+    const normalizedType = String(fileType || "").toLowerCase();
+
+    if (normalizedType.includes("pdf")) {
+        return "PDF";
+    }
+
+    if (normalizedType.includes("png")) {
+        return "PNG";
+    }
+
+    return "JPG";
+}
+
+
+export function createStatusPill(status) {
+    const className = status === "Em análise" ? "review" : status === "Arquivado" ? "archived" : "";
+    return `<span class="status-pill ${className}">${escapeHTML(status)}</span>`;
+}
+
+
+export function escapeHTML(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
+export function fileToDataURL(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.addEventListener("load", () => resolve(reader.result));
+        reader.addEventListener("error", () => reject(reader.error));
+        reader.readAsDataURL(file);
+    });
+}
+
+
+export function getExtension(fileName) {
+    const parts = fileName.toLowerCase().split(".");
+    return parts.length > 1 ? `.${parts.pop()}` : "";
+}
+
+
+export function isAllowedDocument(file) {
+    const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+    const allowedExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
+    const extension = getExtension(file.name);
+    return allowedTypes.includes(file.type) || allowedExtensions.includes(extension);
+}
+
+
+export function isAllowedImage(file) {
+    const allowedTypes = ["image/jpeg", "image/png"];
+    const allowedExtensions = [".jpg", ".jpeg", ".png"];
+    const extension = getExtension(file.name);
+    return allowedTypes.includes(file.type) || allowedExtensions.includes(extension);
+}
+
+
+export function isAllowedPdf(file) {
+    return file.type === "application/pdf" || getExtension(file.name) === ".pdf";
+}
+
+
+// Usado pelos anexos livres do cadastro do cliente (módulo Kits Jurídicos): aceita
+// PDF, DOCX e imagens (JPG/PNG).
+export function isAllowedAttachment(file) {
+    const allowedTypes = [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "image/jpeg",
+        "image/png"
+    ];
+    const allowedExtensions = [".pdf", ".docx", ".jpg", ".jpeg", ".png"];
+    const extension = getExtension(file.name);
+    return allowedTypes.includes(file.type) || allowedExtensions.includes(extension);
+}
+
+
+export function getAttachmentLabel(fileType, fileName = "") {
+    const normalizedType = String(fileType || "").toLowerCase();
+    const extension = getExtension(fileName).replace(".", "");
+
+    if (normalizedType.includes("pdf") || extension === "pdf") {
+        return "PDF";
+    }
+
+    if (normalizedType.includes("wordprocessingml") || extension === "docx") {
+        return "DOCX";
+    }
+
+    if (normalizedType.includes("png") || extension === "png") {
+        return "PNG";
+    }
+
+    return "JPG";
+}
+
+
+// Gera um nome de arquivo seguro (sem acentos/caracteres especiais) para downloads,
+// usado ao exportar documentos gerados pelo módulo de Kits Jurídicos.
+export function slugifyFileName(value) {
+    return String(value || "documento")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .toLowerCase() || "documento";
+}
+
+
+// Dispara o download de um Blob no navegador (sem depender de backend).
+export function downloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}

@@ -1,0 +1,54 @@
+/* ==========================================================================
+   inline-styles.css
+   Regras extraídas dos atributos style="" que estavam soltos no index.html.
+   ========================================================================== */
+
+/* Linha de filtros/ações (usado nos cabeçalhos de Financeiro, Contratos etc.) */
+.toolbar-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+/* Campos dentro de uma toolbar-row, com larguras mínimas específicas */
+.field-wide {
+    min-width: 220px;
+}
+
+.field-medium {
+    min-width: 200px;
+}
+
+/* Campo sem margem (usado em filtros de mês dentro de painéis) */
+.field-flush {
+    margin: 0;
+}
+
+/* Campo com espaçamento superior (usado em formulários de modais) */
+.field-spaced {
+    margin-top: 12px;
+}
+
+/* Grade de detalhes com 2 colunas (Configurações, Sessão do usuário) */
+.detail-grid-2col {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Texto que preserva quebras de linha (detalhe de notificação) */
+.text-pre-wrap {
+    white-space: pre-wrap;
+}
+
+/* Texto de apoio pequeno e discreto (subtítulo do modal de contrato) */
+.text-muted-sm {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+}
+
+/* Aviso de erro/perigo pequeno, com espaçamento superior (modais) */
+.text-danger-warning {
+    color: var(--color-danger);
+    font-size: 0.8rem;
+    margin-top: 10px;
+}

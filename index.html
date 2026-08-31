@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lemnova | CRM Jurídico</title>
+    <script>
+        // Aplica o tema salvo (claro/escuro) antes da primeira pintura da página, pra não
+        // piscar tema claro por uma fração de segundo antes do React montar.
+        // Ver src/hooks/useTheme.js para a lógica completa de troca/persistência do tema.
+        (function () {
+            try {
+                if (localStorage.getItem("juresone.theme") === "dark") {
+                    document.documentElement.setAttribute("data-theme", "dark");
+                }
+            } catch (error) {
+                // localStorage indisponível — segue no tema claro (padrão).
+            }
+        })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,206 @@
+/* css/justitia.css
+   ============================================================================
+   SISTEMA DE ANIMAÇÕES DA JUSTITIA (mascote/IA do sistema)
+   ============================================================================
+   Não define posição nem tamanho — isso continua em cada CSS de página
+   (login.css, chat-messages.css etc.), do jeito que já está.
+
+   Este arquivo cuida só do "o que ela está fazendo", através do atributo
+   data-anim no elemento <img> que já existe no HTML. Não é preciso criar,
+   remover ou alterar nenhum elemento no HTML — só ligar/trocar o atributo
+   data-anim via JS (ver js/justitia.js).
+
+   Exemplo (o <img class="login-figure"> do index.html não muda nada):
+     <img src="assets/images/justitia.png" class="login-figure" data-anim="idle">
+
+   Para adicionar uma animação nova (das ~50 planejadas):
+     1) Escreva o @keyframes aqui embaixo.
+     2) Crie a regra: [data-anim="nome-da-animacao"] { animation: ...; }
+     3) Registre "nome-da-animacao" em js/justitia.js (JUSTITIA_ANIMATIONS).
+   Nenhum arquivo de página (login.css, chat-messages.css, index.html) precisa
+   ser tocado.
+   ============================================================================ */
+
+/* idle: estado padrão de espera (hoje estática; quando a idle real chegar,
+   troca o conteúdo deste bloco por ela) */
+[data-anim="idle"] {
+    animation: none;
+}
+
+/* intro: entrada em cena (fade + leve subida), usada na tela de login */
+[data-anim="intro"] {
+    opacity: 0;
+    animation: justitiaIntro 3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes justitiaIntro {
+    0% {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    60% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* glow: brilho suave contínuo, usado como "respiração" da estátua */
+[data-anim="glow"] {
+    animation: justitiaGlow 4s ease-in-out infinite;
+}
+
+@keyframes justitiaGlow {
+    0%, 100% {
+        filter: brightness(1);
+    }
+    50% {
+        filter: brightness(1.15);
+    }
+}
+
+/* appear/disappear: usadas pelo widget flutuante (aparece por X segundos e
+   some sozinha — ver showJustitiaFloating em js/justitia.js) */
+[data-anim="appear"] {
+    opacity: 0;
+    animation: justitiaAppear 0.5s ease-out forwards;
+}
+
+@keyframes justitiaAppear {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+[data-anim="disappear"] {
+    opacity: 1;
+    animation: justitiaDisappear 0.5s ease-in forwards;
+}
+
+@keyframes justitiaDisappear {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+}
+
+/* ============================================================
+   CONTEXTOS DE POSIÇÃO/TAMANHO (por tela onde ela aparece)
+   ============================================================
+   .login-figure já tem seu próprio posicionamento em login.css. */
+
+/* Widget flutuante: fica sobreposta em cima de todas as telas do sistema
+   (Dashboard, Clientes, Financeiro...), sempre no mesmo lugar, por cima do
+   conteúdo. position: fixed -> não faz parte do fluxo da página, não
+   empurra nada, não precisa estar dentro de nenhuma seção específica. */
+.justitia--float {
+    position: fixed;
+    right: 18px;
+    /* --justitia-floor é medido em js/justitia.js (altura real do rodapé).
+       --justitia-floor-adjust é só um ajuste fino manual, em px, caso a
+       imagem tenha espaço transparente embaixo e os pés não encostem
+       "no talo" — pode subir esse número (ex: 6px) se sobrar espaço. */
+    bottom: calc(var(--justitia-floor, 0px) + var(--justitia-floor-adjust, 0px));
+    z-index: 30;
+
+    width: 140px;
+    height: auto;
+    max-height: 40vh;
+
+    object-fit: contain;
+    pointer-events: none; /* não bloqueia cliques nos campos por trás dela */
+
+    opacity: 0; /* começa escondida; só aparece quando chamada (ver justitia.js) */
+}
+
+/* Botão fixo pra chamar a Justitia na hora que quiser — sempre visível,
+   mesmo quando ela está escondida. */
+.justitia-call-button {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 31;
+
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 0;
+
+    display: grid;
+    place-items: center;
+    font-size: 1.2rem;
+
+    color: var(--color-navy);
+    background: var(--color-gold);
+    box-shadow: 0 10px 24px rgba(212, 175, 55, 0.32);
+
+    /* transição de "volta" (quando ela some e o botão reaparece) — com um
+       pequeno atraso pra dar a sensação de que ele nasce dela, e não que
+       os dois aparecem ao mesmo tempo */
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 0.25s ease 0.2s, transform 0.25s ease 0.2s;
+}
+
+.justitia-call-button:hover {
+    background: #e2bf4b;
+}
+
+/* is-morphed: aplicada pelo justitia.js quando a Justitia flutuante aparece.
+   O botão encolhe e some, como se tivesse "virado" ela. Sem atraso aqui —
+   some na hora que ela é chamada. */
+.justitia-call-button.is-morphed {
+    opacity: 0;
+    transform: scale(0.35);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* thinking: usada quando ela está processando/esperando resposta da IA
+   (caixa de diálogo, próxima atualização). Balanço leve + brilho pulsante,
+   pra dar sensação de "processamento" sem precisar de sprite novo. */
+[data-anim="thinking"] {
+    animation: justitiaThinking 1.8s ease-in-out infinite;
+    transform-origin: bottom center;
+}
+
+@keyframes justitiaThinking {
+    0%, 100% {
+        transform: rotate(0deg) translateY(0);
+        filter: brightness(1);
+    }
+    25% {
+        transform: rotate(-2deg) translateY(-3px);
+    }
+    50% {
+        transform: rotate(0deg) translateY(0);
+        filter: brightness(1.12);
+    }
+    75% {
+        transform: rotate(2deg) translateY(-3px);
+    }
+}
+
+/* ============================================================
+   NOVAS ANIMAÇÕES ENTRAM AQUI EMBAIXO (ex: wave, celebrate...)
+
+   [data-anim="nome-da-animacao"] {
+       animation: justitiaNomeDaAnimacao <duração> <easing> <iteração>;
+   }
+
+   @keyframes justitiaNomeDaAnimacao {
+       ...
+   }
+   ============================================================ */

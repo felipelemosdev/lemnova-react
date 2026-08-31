@@ -1,0 +1,180 @@
+/* css/agenda.css
+   Página Agenda: o quadro com as 3 categorias de evento (Atrasados, Hoje,
+   Restante do mês) e os dois modos de visualização de cada categoria —
+   lista (padrão, reaproveita .compact-item) ou cards (.agenda-event-card).
+   O usuário escolhe o modo no botão view-toggle (ver components.css);
+   estado em appState.eventViewMode, lógica em js/agenda.js.
+*/
+
+.agenda-board {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 14px;
+}
+
+.agenda-category {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+.agenda-category-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.agenda-category-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: rgba(16, 32, 58, 0.12);
+    font-size: 0.75rem;
+}
+
+/* Atrasados: vermelho (evento já passou da data e não foi concluído) */
+.agenda-category-overdue .agenda-category-header {
+    background: rgba(180, 35, 24, 0.1);
+    color: var(--color-danger);
+}
+
+/* Hoje: neutro (cinza) */
+.agenda-category-today .agenda-category-header {
+    background: rgba(71, 84, 103, 0.1);
+    color: #475467;
+}
+
+/* Restante do mês: verde, até o último dia do mês corrente */
+.agenda-category-month .agenda-category-header {
+    background: rgba(2, 122, 72, 0.1);
+    color: var(--color-success);
+}
+
+.agenda-category-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 64px;
+}
+
+.agenda-category-empty {
+    margin: 0;
+    padding: 12px;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius);
+    color: var(--color-muted);
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+/* Modo lista: usa .compact-item (mesmo padrão do resto do sistema), só com
+   um padding um pouco menor pra caber melhor numa coluna mais estreita. */
+.agenda-category-body .compact-item {
+    padding: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.agenda-category-body .compact-item .event-actions {
+    justify-content: flex-start;
+}
+
+/* O item de lista agora tem 2 linhas de texto (data/hora e cliente) em vez
+   de uma só — cada uma precisa quebrar linha (span é inline por padrão). */
+.agenda-category-body .compact-item > div > span {
+    display: block;
+}
+
+/* Modo cards: mesma linguagem visual dos cards de tarefa do Dashboard
+   (.task-dash-card em dashboard.css) — borda colorida à esquerda conforme
+   a categoria, título, cliente, observação e uma linha de meta com a data
+   alinhada à direita. */
+.agenda-event-card {
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-left-width: 3px;
+    border-radius: var(--radius);
+    background: var(--color-white);
+}
+
+.agenda-category-overdue .agenda-event-card {
+    border-left-color: var(--color-danger);
+}
+
+.agenda-category-today .agenda-event-card {
+    border-left-color: #475467;
+}
+
+.agenda-category-month .agenda-event-card {
+    border-left-color: var(--color-success);
+}
+
+.agenda-event-card strong {
+    display: block;
+    color: var(--color-navy);
+    font-size: 0.88rem;
+    margin-bottom: 4px;
+}
+
+.agenda-event-card .agenda-event-client {
+    display: block;
+    color: var(--color-muted);
+    font-size: 0.78rem;
+    margin-bottom: 6px;
+}
+
+.agenda-event-card .agenda-event-notes {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--color-text);
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+}
+
+.agenda-event-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.agenda-event-card-date {
+    color: var(--color-muted);
+    font-size: 0.75rem;
+    margin-left: auto;
+}
+
+.agenda-event-card-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* ============================================================================
+   Modal de novo/editar evento (antes era um painel fixo ao lado da lista;
+   agora só aparece quando o usuário clica em "+ Novo evento" ou "Editar").
+   ============================================================================ */
+.event-form-modal {
+    width: min(100%, 560px);
+}
+
+.event-form-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
