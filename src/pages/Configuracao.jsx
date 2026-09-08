@@ -6,26 +6,16 @@
 // fase: tema, sessão e armazenamento fazem parte da "casca" do sistema, não de um módulo
 // de negócio que ainda será migrado.
 
-import { useState } from "react";
 import { useApp } from "../context/AppContext.jsx";
 import { useTheme } from "../hooks/useTheme.js";
 import { getStorageModeLabel } from "../services/api.js";
 
 export default function Configuracao() {
-    const { session, logout, clients, documents, finance, events, tasks, installments, settings, saveSettings } = useApp();
+    const { session, logout, clients, documents, finance, events, tasks, installments } = useApp();
     const { theme, toggleTheme } = useTheme();
-    const [salarioMinimoDraft, setSalarioMinimoDraft] = useState(String(settings.salarioMinimo || ""));
-    const [savedFeedback, setSavedFeedback] = useState(false);
 
     const totalRecords =
         clients.length + documents.length + finance.length + events.length + tasks.length + installments.length;
-
-    async function handleSaveSalarioMinimo(event) {
-        event.preventDefault();
-        await saveSettings({ salarioMinimo: Number(salarioMinimoDraft) || 0 });
-        setSavedFeedback(true);
-        setTimeout(() => setSavedFeedback(false), 2000);
-    }
 
     return (
         <section id="settingsSection" className="content-section active-section">
@@ -53,39 +43,6 @@ export default function Configuracao() {
                             <span className="switch-track" aria-hidden="true"></span>
                         </span>
                     </label>
-                </section>
-
-                <section className="workspace-panel">
-                    <div className="section-heading">
-                        <div>
-                            <p className="eyebrow">Configuração</p>
-                            <h3>Salário mínimo vigente</h3>
-                        </div>
-                    </div>
-
-                    <form className="form-grid" onSubmit={handleSaveSalarioMinimo}>
-                        <label className="field">
-                            <span>Valor (R$)</span>
-                            <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                placeholder="Ex: 1518.00"
-                                value={salarioMinimoDraft}
-                                onChange={(e) => setSalarioMinimoDraft(e.target.value)}
-                            />
-                        </label>
-                        <div className="form-actions full-width">
-                            <button className="btn btn-primary" type="submit">
-                                {savedFeedback ? "Salvo ✓" : "Salvar"}
-                            </button>
-                        </div>
-                    </form>
-
-                    <p className="field-hint">
-                        Usado como referência nos cálculos manuais de honorários e RPV (o valor das parcelas e do RPV
-                        continuam sendo preenchidos manualmente no cadastro do cliente).
-                    </p>
                 </section>
 
                 <section className="workspace-panel">

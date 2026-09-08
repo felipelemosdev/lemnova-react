@@ -95,11 +95,9 @@ function EventListItem({ eventItem, findClient, onEdit, onDelete, onComplete }) 
                 <strong>{eventItem.type}</strong>
                 <span>{formatDate(eventItem.date)} às {eventItem.time}</span>
                 <span>Cliente: {client ? client.name : "Sem cliente vinculado"}</span>
-                {eventItem.location ? <span>Local: {eventItem.location}</span> : null}
                 {eventItem.notes ? <small>Obs: {eventItem.notes}</small> : null}
             </div>
             <div className="event-actions">
-                {eventItem.examStatus ? <span className="status-pill">{eventItem.examStatus}</span> : null}
                 <span className="status-pill">{eventItem.alert}</span>
                 <button className="action-button complete" type="button" onClick={() => onComplete(eventItem.id)}>
                     ✓ CONCLUÍDO
@@ -121,10 +119,8 @@ function EventCard({ eventItem, findClient, onEdit, onDelete, onComplete }) {
         <article className="agenda-event-card">
             <strong>{eventItem.type}</strong>
             <span className="agenda-event-client">Cliente: {client ? client.name : "Sem cliente vinculado"}</span>
-            {eventItem.location ? <span className="agenda-event-notes">Local: {eventItem.location}</span> : null}
             {eventItem.notes ? <span className="agenda-event-notes">{eventItem.notes}</span> : null}
             <div className="agenda-event-card-meta">
-                {eventItem.examStatus ? <span className="status-pill">{eventItem.examStatus}</span> : null}
                 <span className="status-pill">{eventItem.alert}</span>
                 <span className="agenda-event-card-date">{formatDate(eventItem.date)} às {eventItem.time}</span>
             </div>

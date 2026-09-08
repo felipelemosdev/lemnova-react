@@ -4,7 +4,7 @@
 // createClientListActions(), createClientAvatar() de js/clients.js.
 
 import { useState, Fragment } from "react";
-import { sortClients, PROCESS_STAGES } from "../../services/domain.js";
+import { sortClients } from "../../services/domain.js";
 import { getInitials, formatCpf } from "../../services/utils.js";
 import ClientExpandedDetails from "./ClientExpandedDetails.jsx";
 
@@ -22,11 +22,10 @@ const SORT_OPTIONS = [
     { value: "status", label: "Status" }
 ];
 
-export default function ClientListPanel({ clients, documents, onEdit, onDelete, onPreviewDocument, onPreviewClientPdf, onPrintContract }) {
+export default function ClientListPanel({ clients, documents, onEdit, onDelete, onPreviewDocument, onPreviewClientPdf, onPrintContract, onOpenKit }) {
     const [viewMode, setViewMode] = useState("cards");
     const [search, setSearch] = useState("");
     const [benefitFilter, setBenefitFilter] = useState("");
-    const [stageFilter, setStageFilter] = useState("");
     const [sortOrder, setSortOrder] = useState("name-asc");
     const [openClientId, setOpenClientId] = useState(null);
 
@@ -34,9 +33,6 @@ export default function ClientListPanel({ clients, documents, onEdit, onDelete, 
     const filteredClients = sortClients(
         clients.filter((client) => {
             if (benefitFilter && client.benefit !== benefitFilter) {
-                return false;
-            }
-            if (stageFilter && (client.processStage || PROCESS_STAGES[0]) !== stageFilter) {
                 return false;
             }
             const content = `${client.name} ${client.document} ${client.phone} ${client.benefit || ""}`.toLowerCase();
@@ -99,16 +95,6 @@ export default function ClientListPanel({ clients, documents, onEdit, onDelete, 
                 </label>
 
                 <label className="field list-controls-sort">
-                    <span>Filtrar por etapa do processo</span>
-                    <select id="clientStageFilter" value={stageFilter} onChange={(e) => setStageFilter(e.target.value)}>
-                        <option value="">Todas as etapas</option>
-                        {PROCESS_STAGES.map((stage) => (
-                            <option key={stage} value={stage}>{stage}</option>
-                        ))}
-                    </select>
-                </label>
-
-                <label className="field list-controls-sort">
                     <span>Ordenar / imprimir por</span>
                     <select id="clientSortOrder" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
                         {SORT_OPTIONS.map((option) => (
@@ -139,6 +125,7 @@ export default function ClientListPanel({ clients, documents, onEdit, onDelete, 
                             onEdit={() => onEdit(client)}
                             onDelete={() => onDelete(client)}
                             onPrintContract={() => onPrintContract(client)}
+                            onOpenKit={() => onOpenKit(client)}
                             onPreviewDocument={onPreviewDocument}
                             onPreviewClientPdf={onPreviewClientPdf}
                         />
@@ -160,7 +147,7 @@ function ClientAvatar({ client }) {
     return <span className="client-avatar large" aria-hidden="true">{getInitials(client.name)}</span>;
 }
 
-function ClientCard({ client, documents, isOpen, onToggle, onEdit, onDelete, onPrintContract, onPreviewDocument, onPreviewClientPdf }) {
+function ClientCard({ client, documents, isOpen, onToggle, onEdit, onDelete, onPrintContract, onOpenKit, onPreviewDocument, onPreviewClientPdf }) {
     return (
         <article className="client-profile-card" data-client-id={client.id}>
             <div className="client-profile-header" onClick={onToggle}>
@@ -168,11 +155,11 @@ function ClientCard({ client, documents, isOpen, onToggle, onEdit, onDelete, onP
                 <div className="client-profile-title">
                     <strong>{client.name}</strong>
                     <span>CPF {formatCpf(client.document)} · {client.status || "Sem status"}</span>
-                    <span className="task-pill medium">{client.processStage || PROCESS_STAGES[0]}</span>
                 </div>
                 <div className="table-actions" onClick={(e) => e.stopPropagation()}>
                     <button className="action-button" type="button" onClick={onToggle}>{isOpen ? "Fechar" : "Abrir"}</button>
                     <button className="action-button" type="button" onClick={onPrintContract}>🖨 Contrato</button>
+                    <button className="action-button" type="button" onClick={onOpenKit}>📄 Kit ADM/Judicial</button>
                     <button className="action-button" type="button" onClick={onEdit}>Editar</button>
                     <button className="action-button danger" type="button" onClick={onDelete}>Excluir</button>
                 </div>

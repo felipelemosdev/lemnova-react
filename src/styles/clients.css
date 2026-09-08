@@ -202,15 +202,3 @@
 .client-row-detail .client-expanded {
     padding: 14px;
 }
-
-/* Linha do tempo do fluxo do processo (ProcessStageTracker.jsx) */
-.stage-track {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
-}
-
-.stage-track .task-pill {
-    border: 1px solid var(--color-border);
-}

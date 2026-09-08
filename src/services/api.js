@@ -16,7 +16,7 @@
 
 import { STORAGE_KEYS, readStorage, saveStorage, removeStorage, initializeDatabase, migrateLegacyStorage, getStorageModeLabel } from "./storage.js";
 import { createId } from "./utils.js";
-import { generateInstallmentsForClient, hasInstallments, DEFAULT_PROCESS_STAGE } from "./domain.js";
+import { generateInstallmentsForClient, hasInstallments } from "./domain.js";
 
 // --------------------------------------------------------------------------
 // Boot / infraestrutura
@@ -102,25 +102,6 @@ export const financeApi = makeCrud(STORAGE_KEYS.finance);
 export const eventsApi = makeCrud(STORAGE_KEYS.events);
 export const tasksApi = makeCrud(STORAGE_KEYS.tasks);
 export const installmentsApi = makeCrud(STORAGE_KEYS.installments);
-export const stageHistoryApi = makeCrud(STORAGE_KEYS.stageHistory);
-
-// --------------------------------------------------------------------------
-// Configurações gerais (hoje: só o salário mínimo vigente).
-// --------------------------------------------------------------------------
-
-const DEFAULT_SETTINGS = { salarioMinimo: 0 };
-
-export async function getSettings() {
-    const settings = await readStorage(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
-    return { ...DEFAULT_SETTINGS, ...settings };
-}
-
-export async function updateSettings(changes) {
-    const current = await getSettings();
-    const updated = { ...current, ...changes };
-    await saveStorage(STORAGE_KEYS.settings, updated);
-    return updated;
-}
 
 // Excluir um cliente também "desvincula" (não apaga) os processos e lançamentos
 // financeiros que apontavam pra ele, e remove as parcelas de contrato associadas —
@@ -372,51 +353,6 @@ export async function updateInstallmentAmountAndDate(installmentId, { amount, du
         ),
         saveCollection(STORAGE_KEYS.finance, financeList)
     ]);
-}
-
-// --------------------------------------------------------------------------
-// Fluxo do processo (Cadastro → ... → Finalizado)
-// --------------------------------------------------------------------------
-//
-// Ponto único de mudança de etapa: SEMPRE passar por aqui (nunca dar
-// clientsApi.update(id, { processStage }) direto num componente), porque é aqui que o
-// histórico é gravado. `extraFields` serve pra também setar, na mesma chamada, campos que
-// nascem numa etapa específica (ex.: protocolDate/protocolNumber ao entrar em "Protocolo
-// realizado") sem precisar de duas chamadas separadas.
-//
-// IMPORTANTE: protocolDate nunca é sobrescrita depois de setada uma vez — é a data usada
-// no cálculo manual do período do RPV, e o documento do fluxo pede explicitamente que ela
-// seja preservada como dado histórico do processo.
-export async function changeClientProcessStage(clientId, newStage, extraFields = {}) {
-    const clients = await listCollection(STORAGE_KEYS.clients);
-    const client = clients.find((item) => item.id === clientId);
-    if (!client) return;
-
-    const previousStage = client.processStage || DEFAULT_PROCESS_STAGE;
-    if (previousStage === newStage && !Object.keys(extraFields).length) return;
-
-    const safeExtraFields = { ...extraFields };
-    if (client.protocolDate && "protocolDate" in safeExtraFields) {
-        delete safeExtraFields.protocolDate; // preserva a data original de protocolo
-    }
-
-    const updatedClients = clients.map((item) =>
-        item.id === clientId
-            ? { ...item, ...safeExtraFields, processStage: newStage, updatedAt: new Date().toISOString() }
-            : item
-    );
-    await saveCollection(STORAGE_KEYS.clients, updatedClients);
-
-    const historyEntry = {
-        id: createId(),
-        clientId,
-        previousStage,
-        newStage,
-        changedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString()
-    };
-    const history = await listCollection(STORAGE_KEYS.stageHistory);
-    await saveCollection(STORAGE_KEYS.stageHistory, [historyEntry, ...history]);
 }
 
 // --------------------------------------------------------------------------

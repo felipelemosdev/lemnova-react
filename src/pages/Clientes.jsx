@@ -2,53 +2,48 @@
 // Migrado de: <section id="clientsSection"> em index.html + o "roteador" de ações
 // handleClientTableClick/showClientMode de js/clients.js.
 //
-// Orquestra o cadastro (ClientForm) e a listagem (ClientListPanel), além dos dois
-// modais compartilhados (confirmação de exclusão e visualização de PDF/documento).
-//
-// "Imprimir contrato" ainda não está disponível: no app original abria o modal de
-// contrato (js/contract.js), que é conteúdo de uma fase futura da migração.
+// Orquestra o cadastro (ClientForm) e a listagem (ClientListPanel), além dos três
+// modais compartilhados (confirmação de exclusão, visualização de PDF/documento, e
+// geração de contrato).
 
 import { useState } from "react";
 import { useApp } from "../context/AppContext.jsx";
 import ClientForm from "../components/clients/ClientForm.jsx";
 import ClientListPanel from "../components/clients/ClientListPanel.jsx";
-import ProcessStageTracker from "../components/clients/ProcessStageTracker.jsx";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
 import DocumentPreviewModal from "../components/DocumentPreviewModal.jsx";
+import ContractPrintModal from "../components/contracts/ContractPrintModal.jsx";
+import KitDocumentsModal from "../components/contracts/KitDocumentsModal.jsx";
 import { formatFileSize, getDocumentLabel } from "../services/utils.js";
 
 export default function Clientes() {
     const { clients, documents, findClient, deleteClient } = useApp();
     const [mode, setMode] = useState("register");
-    const [editingClientId, setEditingClientId] = useState(null);
+    const [editingClient, setEditingClient] = useState(null);
     const [pendingDelete, setPendingDelete] = useState(null);
     const [preview, setPreview] = useState(null);
-
-    // Deriva sempre da lista atual do contexto (em vez de guardar uma cópia do cliente em
-    // state) — assim, depois de changeStage() no ProcessStageTracker (que dá refresh()),
-    // o tracker e o formulário recebem a etapa/campos atualizados sem precisar sincronizar
-    // manualmente duas fontes de verdade.
-    const editingClient = editingClientId ? clients.find((client) => client.id === editingClientId) || null : null;
+    const [contractClient, setContractClient] = useState(null);
+    const [kitClient, setKitClient] = useState(null);
 
     function startEdit(client) {
-        setEditingClientId(client.id);
+        setEditingClient(client);
         setMode("register");
     }
 
     function startCreate() {
-        setEditingClientId(null);
+        setEditingClient(null);
         setMode("register");
     }
 
     function handleSaved() {
-        setEditingClientId(null);
+        setEditingClient(null);
         setMode("list");
     }
 
     async function confirmDelete() {
         await deleteClient(pendingDelete.id);
-        if (editingClientId === pendingDelete.id) {
-            setEditingClientId(null);
+        if (editingClient?.id === pendingDelete.id) {
+            setEditingClient(null);
         }
         setPendingDelete(null);
     }
@@ -81,8 +76,8 @@ export default function Clientes() {
         });
     }
 
-    function handlePrintContract() {
-        alert("Impressão de contrato ainda será migrada na fase de Contratos.");
+    function handlePrintContract(client) {
+        setContractClient(client);
     }
 
     return (
@@ -107,16 +102,12 @@ export default function Clientes() {
                     </button>
                 </div>
 
-                {mode === "register" && editingClient ? (
-                    <ProcessStageTracker client={editingClient} />
-                ) : null}
-
                 {mode === "register" ? (
                     <ClientForm
                         key={editingClient?.id ?? "new"}
                         editingClient={editingClient}
                         onCancelEdit={() => {
-                            setEditingClientId(null);
+                            setEditingClient(null);
                         }}
                         onSaved={handleSaved}
                     />
@@ -129,6 +120,7 @@ export default function Clientes() {
                         onPreviewDocument={openDocumentPreview}
                         onPreviewClientPdf={openClientPdfPreview}
                         onPrintContract={handlePrintContract}
+                        onOpenKit={(client) => setKitClient(client)}
                     />
                 )}
             </div>
@@ -149,6 +141,12 @@ export default function Clientes() {
                 kind={preview?.kind}
                 onClose={() => setPreview(null)}
             />
+
+            {contractClient ? (
+                <ContractPrintModal client={contractClient} onClose={() => setContractClient(null)} />
+            ) : null}
+
+            {kitClient ? <KitDocumentsModal client={kitClient} onClose={() => setKitClient(null)} /> : null}
         </section>
     );
 }

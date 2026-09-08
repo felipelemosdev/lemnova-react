@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import { clientsApi, generateInstallmentsIfNeeded } from "../../services/api.js";
 import { useApp } from "../../context/AppContext.jsx";
 import { onlyDigits, formatCpf, formatCep, isValidCpf, fileToDataURL, isAllowedImage, isAllowedPdf } from "../../services/utils.js";
-import { ADMINISTRATIVE_STATUS_OPTIONS, DEFAULT_PROCESS_STAGE } from "../../services/domain.js";
+import { ADMINISTRATIVE_STATUS_OPTIONS } from "../../services/domain.js";
 
 const BENEFIT_OPTIONS = [
     "Aposentadoria", "Auxílio-Doença", "Auxílio-Acidente", "Doença Ocupacional",
@@ -297,13 +297,6 @@ export default function ClientForm({ editingClient, onCancelEdit, onSaved }) {
             rpvValue: Number(form.rpvValue) || 0,
             rpvDate: form.rpvDate,
             rpvReceived: editingClient?.rpvReceived || false,
-            // Etapa do processo não é editada por este formulário (ver ProcessStageTracker,
-            // na tela de Clientes) — aqui só garantimos que um cliente novo nasce em
-            // "Cadastro" e que um cliente existente mantém a etapa e a data de protocolo
-            // que já tinha.
-            processStage: editingClient?.processStage || DEFAULT_PROCESS_STAGE,
-            protocolDate: editingClient?.protocolDate || "",
-            protocolNumber: editingClient?.protocolNumber || "",
             notes: form.notes.trim(),
             photoData,
             photoName,

@@ -26,11 +26,7 @@ import {
     eventsApi,
     tasksApi,
     installmentsApi,
-    stageHistoryApi,
-    deleteClientCascade,
-    changeClientProcessStage,
-    getSettings,
-    updateSettings
+    deleteClientCascade
 } from "../services/api.js";
 import { createId } from "../services/utils.js";
 
@@ -46,8 +42,6 @@ export function AppProvider({ children }) {
     const [events, setEvents] = useState([]);
     const [tasks, setTasks] = useState([]);
     const [installments, setInstallments] = useState([]);
-    const [stageHistory, setStageHistory] = useState([]);
-    const [settings, setSettings] = useState({ salarioMinimo: 0 });
 
     // Qual tarefa está com a "conversa" (chat interno) aberta. Fica aqui no Context (e
     // não como estado local da página de Tarefas) porque o botão 💬 do topbar também
@@ -56,25 +50,20 @@ export function AppProvider({ children }) {
     const [activeReplyTaskId, setActiveReplyTaskId] = useState(null);
 
     const refresh = useCallback(async () => {
-        const [clientsList, documentsList, financeList, eventsList, tasksList, installmentsList, stageHistoryList, settingsValue] =
-            await Promise.all([
-                clientsApi.list(),
-                documentsApi.list(),
-                financeApi.list(),
-                eventsApi.list(),
-                tasksApi.list(),
-                installmentsApi.list(),
-                stageHistoryApi.list(),
-                getSettings()
-            ]);
+        const [clientsList, documentsList, financeList, eventsList, tasksList, installmentsList] = await Promise.all([
+            clientsApi.list(),
+            documentsApi.list(),
+            financeApi.list(),
+            eventsApi.list(),
+            tasksApi.list(),
+            installmentsApi.list()
+        ]);
         setClients(clientsList);
         setDocuments(documentsList);
         setFinance(financeList);
         setEvents(eventsList);
         setTasks(tasksList);
         setInstallments(installmentsList);
-        setStageHistory(stageHistoryList);
-        setSettings(settingsValue);
     }, []);
 
     // Boot: abre o IndexedDB, migra dados legados do localStorage (se houver) e
@@ -114,36 +103,6 @@ export function AppProvider({ children }) {
             await refresh();
         },
         [refresh]
-    );
-
-    // ---- Fluxo do processo ---------------------------------------------------
-    // Ponto único usado pela tela de Clientes (stepper) pra avançar/retroceder etapa —
-    // sempre passa por changeClientProcessStage() em services/api.js, que grava o
-    // histórico. Nunca chamar clientsApi.update({ processStage }) direto de um componente.
-    const changeStage = useCallback(
-        async (clientId, newStage, extraFields) => {
-            await changeClientProcessStage(clientId, newStage, extraFields);
-            await refresh();
-        },
-        [refresh]
-    );
-
-    const getClientStageHistory = useCallback(
-        (clientId) =>
-            stageHistory
-                .filter((entry) => entry.clientId === clientId)
-                .sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt)),
-        [stageHistory]
-    );
-
-    // ---- Configurações ---------------------------------------------------------
-    const saveSettings = useCallback(
-        async (changes) => {
-            const updated = await updateSettings(changes);
-            setSettings(updated);
-            return updated;
-        },
-        []
     );
 
     // ---- Tarefas / conversa interna ---------------------------------------------
@@ -226,13 +185,8 @@ export function AppProvider({ children }) {
             events,
             tasks,
             installments,
-            stageHistory,
-            settings,
             findClient,
             deleteClient,
-            changeStage,
-            getClientStageHistory,
-            saveSettings,
             activeReplyTaskId,
             openTaskReply,
             closeTaskReply,
@@ -253,13 +207,8 @@ export function AppProvider({ children }) {
             events,
             tasks,
             installments,
-            stageHistory,
-            settings,
             findClient,
             deleteClient,
-            changeStage,
-            getClientStageHistory,
-            saveSettings,
             activeReplyTaskId,
             openTaskReply,
             closeTaskReply,
