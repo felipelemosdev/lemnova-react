@@ -69,3 +69,11 @@ textarea {
     display: flex;
     flex-direction: column;
 }
+
+/* Elo que faltava na corrente de altura: o Vite monta o React dentro de <div id="root">,
+   que por padrão não tem altura nenhuma (fica do tamanho do conteúdo). Sem esta regra, a
+   corrente html{height:100%} → body{height:100vh} → .app-shell{height:100%} quebra bem
+   no meio, e a tela de login (e o resto do app) não ocupa a tela inteira. */
+#root {
+    height: 100%;
+}
